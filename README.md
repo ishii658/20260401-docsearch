@@ -1,5 +1,10 @@
 # 20260401-docsearch
 
+docling でMarkdown に変換して、 llama-cpp-python で embedding vector 生成
+を行う。
+
+
+
 # memo
 
 docling で markdown
