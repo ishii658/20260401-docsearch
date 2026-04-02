@@ -8,6 +8,10 @@ class embVector:
 
     model_path: str = "./embeddinggemma-300M-Q8_0.gguf"
 
+    # モデルの次元数
+    model_dim: int = 768
+    """モデルの次元数"""
+
     def __init__(self) -> None:
         self.llm: Llama = Llama(
             model_path=self.model_path, embedding=True, verbose=False
@@ -28,7 +32,7 @@ class embVector:
         else:
             vector = vector_tmp
 
-        return vector
+        return vector # type: ignore
 
 
 if __name__ == "__main__":
