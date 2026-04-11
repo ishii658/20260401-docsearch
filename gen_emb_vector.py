@@ -1,7 +1,7 @@
 """Embedding vector生成."""
 
 from llama_cpp import Llama
-
+from conver_md_chunk import MdChunk
 
 class embVector:
     """Embedding Vector生成."""
@@ -17,26 +17,37 @@ class embVector:
             model_path=self.model_path, embedding=True, verbose=False
         )
 
-    def emb(self, text: str) -> list[list[float]]:
+    def close(self) -> None:
+        """明示的に llama_cpp リソースを閉じる."""
+        self.llm.close()
+
+    def emb(self, text: str) -> list[float]:
         """Embedding Vector 生成.
 
         Args:
             text (str) 文字列
         """
         embed = self.llm.create_embedding(text)
-        vector_tmp = embed["data"][0]["embedding"]
+        vector = embed["data"][0]["embedding"]
+        return vector
 
-        # ベクトルが list[float] の場合、[vector] にラップして返す
-        if isinstance(vector_tmp[0], list):
-            vector = [vector_tmp]
-        else:
-            vector = vector_tmp
+    def emb_chunks(self, chunks: list[MdChunk]) -> list[list[float]]:
+        """MdChunkのリストをEmbedding Vectorのリストに変換.
 
-        return vector # type: ignore
-
+        Args:
+            chunks (list[MdChunk]): MdChunkのリスト
+        """
+        vectors: list[list[float]] = []
+        for chunk in chunks:
+            vector = self.emb(chunk.text)
+            vectors.append(vector)
+        return vectors
 
 if __name__ == "__main__":
     g_txt = "こんいちは"
     g_ev = embVector()
-    vec = g_ev.emb(g_txt)
-    print(vec)
+    try:
+        vec = g_ev.emb(g_txt)
+        print(vec)
+    finally:
+        g_ev.close()

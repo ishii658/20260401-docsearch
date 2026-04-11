@@ -11,13 +11,14 @@ from pydantic import BaseModel
 class MdChunk(BaseModel):
     """Chunk分割結果."""
 
-    headings: list[str]
+    headings: list[str] | None
     """上位のセクション"""
     text: str
     """文字列"""
     pages: list[int]
     """ページリスト."""
-
+    file_name: str
+    """ファイル名"""
 
 class convertMdChunk:
     """ファイル(xlsx,pptx.pdf)などを読み込んでchunkに別れたMarkdownに."""
@@ -50,6 +51,7 @@ class convertMdChunk:
                 headings=meta.headings,
                 text=chunk.text,
                 pages=sorted(list(page_numbers)),
+                file_name=file_path
             )
             ret_chunk.append(md_chunk)
         #
@@ -58,4 +60,4 @@ class convertMdChunk:
 
 if __name__ == "__main__":
     cnv = convertMdChunk()
-    cnv.convert("pat.pptx")
+    cnv.convert("/home/ishii/data/pat.pptx")
