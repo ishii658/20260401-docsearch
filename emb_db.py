@@ -4,6 +4,8 @@ from vecdb import vecDataStore
 from gen_emb_vector import embVector
 from conver_md_chunk import MdChunk, convertMdChunk
 
+from tokenize_keywords import TokenizerKeywords
+
 def search_dir(dir_path: str, extensions: list[str]) -> list[str]:
     """ディレクトリ内のファイルを検索.
 
@@ -47,17 +49,23 @@ def gen_emb_db(file_path: str, collection_name: str) -> None:
     try:
         # embedding vector 生成
         vectors_list: list[list[list[float]]] = []
+        header_vectors_list:list[list[list[float]]] = []
         for md_chunks in md_chunks_list:
             # MdChunkのリストからテキストを抽出
             # テキストからEmbedding Vectorを生成
-            vectors = emb_vector.emb_chunks(md_chunks)
+            vectors, heddings_vectors = emb_vector.emb_chunks(md_chunks)
             vectors_list.append(vectors)
+            header_vectors_list.append(heddings_vectors)
 
         # DB への書き込み
+        headdings_collection = f"{collection_name}_headdings"
         vdb.create_collection(collection_name)
+        vdb.create_collection(headdings_collection)
         for idx, vectors in enumerate(vectors_list):
+            header_vectors = header_vectors_list[idx]
             chunk = md_chunks_list[idx]
-            vdb.insert_vector_data(vectors, chunk)
+            vdb.insert_vector_data(vectors, chunk, collection_name)
+            vdb.insert_vector_data(header_vectors, chunk, headdings_collection)
     finally:
         emb_vector.close()
         vdb.close()

@@ -42,9 +42,10 @@ class vecDataStore:
                     distance=Distance.COSINE
                 ),
             )
+
         return collection_num
 
-    def insert_vector_data(self, vector_list: list[list[float]], chunks :list[MdChunk]) -> None:
+    def insert_vector_data(self, vector_list: list[list[float]], chunks :list[MdChunk], collection_name: str) -> None:
         """ベクトルデータを挿入.
 
         Args:
@@ -64,7 +65,7 @@ class vecDataStore:
             raise ValueError("Collection is not set. Please create a collection first.")
         
         # ベクトルデータストアに登録
-        self.upsert_points(collection_name=self.collection, points=points)
+        self.upsert_points(collection_name=collection_name, points=points)
 
     # def reg_data_list(self, chunks: list[MdChunk]):
     #     """MdChunkのリストをベクトルデータストアに登録する.

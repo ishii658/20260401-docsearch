@@ -2,6 +2,8 @@
 
 from llama_cpp import Llama
 from conver_md_chunk import MdChunk
+from tokenize_keywords import TokenizerKeywords
+
 
 class embVector:
     """Embedding Vector生成."""
@@ -31,17 +33,47 @@ class embVector:
         vector = embed["data"][0]["embedding"]
         return vector
 
-    def emb_chunks(self, chunks: list[MdChunk]) -> list[list[float]]:
+    def emb_chunks(self, chunks: list[MdChunk], tolknize=False) -> tuple[list[list[float]], list[list[float]]]:
         """MdChunkのリストをEmbedding Vectorのリストに変換.
 
         Args:
             chunks (list[MdChunk]): MdChunkのリスト
+            tolknize (bool): 単語の羅列に変換するかどうか
+
+        Returns:
+           tuple[list[list[float]], list[list[float]]]: Embedding Vectorのリスト
         """
+        if tolknize:
+            tkn = TokenizerKeywords()
+        else:
+            tkn = TokenizerKeywords(dummy=True)  # dummyモードで使用する場合、tokenizer_obj は None
+
         vectors: list[list[float]] = []
+        heddings_vectors: list[list[float]] = []
         for chunk in chunks:
-            vector = self.emb(chunk.text)
+            
+            if chunk.headings is not None:
+                header_str = " ".join(chunk.headings)
+                # 単語分解して登録するか
+                if tolknize:
+                    w_list = tkn.tokenize(header_str)
+                    w_list_str = " ".join(w_list)
+                    header_vector = self.emb(w_list_str)
+                else:
+                    header_vector = self.emb(header_str)
+                heddings_vectors.append(header_vector)
+            #
+
+            # 文章を単語に分解して登録するか
+            if tolknize:
+                w_list = tkn.tokenize(chunk.text)
+                w_list_str = " ".join(w_list)
+                vector = self.emb(w_list_str)
+            else:
+                vector = self.emb(chunk.text)
             vectors.append(vector)
-        return vectors
+
+        return vectors, heddings_vectors
 
 if __name__ == "__main__":
     g_txt = "こんいちは"
