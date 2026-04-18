@@ -33,7 +33,7 @@ class embVector:
         vector = embed["data"][0]["embedding"]
         return vector
 
-    def emb_chunks(self, chunks: list[MdChunk], tolknize=False) -> tuple[list[list[float]], list[list[float]]]:
+    def emb_chunks(self, chunks: list[MdChunk], tolknize=False) -> tuple[list[list[float]], list[list[float]], list[MdChunk]]:
         """MdChunkのリストをEmbedding Vectorのリストに変換.
 
         Args:
@@ -44,13 +44,16 @@ class embVector:
            tuple[list[list[float]], list[list[float]]]: Embedding Vectorのリスト
         """
         if tolknize:
-            tkn = TokenizerKeywords()
+            tkn = TokenizerKeywords(dummy=False)
         else:
             tkn = TokenizerKeywords(dummy=True)  # dummyモードで使用する場合、tokenizer_obj は None
 
         vectors: list[list[float]] = []
         heddings_vectors: list[list[float]] = []
-        for chunk in chunks:
+
+        # chunks をコピー
+        cp_chunks: list[MdChunk] = [chunk.model_copy(deep=True) for chunk in chunks]
+        for chunk in cp_chunks:
             
             if chunk.headings is not None:
                 header_str = " ".join(chunk.headings)
@@ -59,6 +62,7 @@ class embVector:
                     w_list = tkn.tokenize(header_str)
                     w_list_str = " ".join(w_list)
                     header_vector = self.emb(w_list_str)
+                    chunk.headings = [w_list_str]
                 else:
                     header_vector = self.emb(header_str)
                 heddings_vectors.append(header_vector)
@@ -69,11 +73,12 @@ class embVector:
                 w_list = tkn.tokenize(chunk.text)
                 w_list_str = " ".join(w_list)
                 vector = self.emb(w_list_str)
+                chunk.text = w_list_str
             else:
                 vector = self.emb(chunk.text)
             vectors.append(vector)
 
-        return vectors, heddings_vectors
+        return vectors, heddings_vectors, cp_chunks
 
 if __name__ == "__main__":
     g_txt = "こんいちは"
