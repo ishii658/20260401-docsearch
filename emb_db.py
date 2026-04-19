@@ -5,6 +5,7 @@ from gen_emb_vector import embVector
 from conver_md_chunk import MdChunk, convertMdChunk
 
 from tokenize_keywords import TokenizerKeywords
+from txtSerch import TxtSerch
 
 def search_dir(dir_path: str, extensions: list[str]) -> list[str]:
     """ディレクトリ内のファイルを検索.
@@ -52,8 +53,14 @@ def gen_emb_db(file_path: str, collection_name: str) -> None:
         header_vectors_list:list[list[list[float]]] = []
 
         kw_chunk_list: list[list[MdChunk]] = []
-        kw_vectors_list: list[list[list[float]]] = []
-        kw_header_vectors_list:list[list[list[float]]] = []
+        # kw_vectors_list: list[list[list[float]]] = []
+        # kw_header_vectors_list:list[list[list[float]]] = []
+
+        # 全文検索
+        tsch = TxtSerch("./words.sqlite3")
+        tsch.create_table("words")
+        tsch.begin()
+
         for md_chunks in md_chunks_list:
             # MdChunkのリストからテキストを抽出
             # テキストからEmbedding Vectorを生成
@@ -62,11 +69,12 @@ def gen_emb_db(file_path: str, collection_name: str) -> None:
             header_vectors_list.append(heddings_vectors)
 
             # テキストを形態素に分割して、名詞と動詞を取り出して Embedding Vectorを生成
-            kw_vectors, kw_heddings_vectors, kw_chunk = emb_vector.emb_chunks(md_chunks, tolknize=True)
+            kw_vectors, kw_heddings_vectors, kw_chunk = emb_vector.emb_chunks(md_chunks, True, tsch.insert)
             kw_chunk_list.append(kw_chunk)
-            kw_vectors_list.append(vectors)
-            kw_header_vectors_list.append(kw_heddings_vectors)
+            # kw_vectors_list.append(vectors)
+            # kw_header_vectors_list.append(kw_heddings_vectors)
 
+        tsch.commit()
         # === DB への書き込み ===
 
         # heddings 用コレクション
@@ -90,12 +98,13 @@ def gen_emb_db(file_path: str, collection_name: str) -> None:
             vdb.insert_vector_data(vectors, chunk, collection_name)
             vdb.insert_vector_data(header_vectors, chunk, headdings_collection)
 
-            # キーワード用
-            kw_chunk = kw_chunk_list[idx]
-            kw_vectors = kw_vectors_list[idx]
-            kw_header_vectors =kw_header_vectors_list[idx]
-            vdb.insert_vector_data(kw_vectors, kw_chunk, kw_collection)
-            vdb.insert_vector_data(kw_header_vectors, kw_chunk, kw_headdings_collection)
+            # # キーワード用
+            # kw_chunk = kw_chunk_list[idx]
+            # kw_vectors = kw_vectors_list[idx]
+            # kw_header_vectors =kw_header_vectors_list[idx]
+            # vdb.insert_vector_data(kw_vectors, kw_chunk, kw_collection)
+            # vdb.insert_vector_data(kw_header_vectors, kw_chunk, kw_headdings_collection)
+        #
     finally:
         emb_vector.close()
         vdb.close()

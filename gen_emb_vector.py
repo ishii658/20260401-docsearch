@@ -1,5 +1,5 @@
 """Embedding vector生成."""
-
+from typing import Callable
 from llama_cpp import Llama
 from conver_md_chunk import MdChunk
 from tokenize_keywords import TokenizerKeywords
@@ -33,13 +33,14 @@ class embVector:
         vector = embed["data"][0]["embedding"]
         return vector
 
-    def emb_chunks(self, chunks: list[MdChunk], tolknize=False) -> tuple[list[list[float]], list[list[float]], list[MdChunk]]:
+    def emb_chunks(self, chunks: list[MdChunk], tolknize=False, callback: Callable[[str, list[int], str], None] | None = None) -> tuple[list[list[float]], list[list[float]], list[MdChunk]]:
         """MdChunkのリストをEmbedding Vectorのリストに変換.
 
         Args:
             chunks (list[MdChunk]): MdChunkのリスト
             tolknize (bool): 単語の羅列に変換するかどうか
-
+            callback (Callable[[str, list[int], str], None] | None): コールバック関数. headings,textの動詞名詞をスペース区切りしたものが渡される
+                                                                         関数に渡されるのは、 path, ページ, 文字列
         Returns:
            tuple[list[list[float]], list[list[float]]]: Embedding Vectorのリスト
         """
@@ -60,9 +61,17 @@ class embVector:
                 # 単語分解して登録するか
                 if tolknize:
                     w_list = tkn.tokenize(header_str)
-                    w_list_str = " ".join(w_list)
+                    # 重複削除
+                    w_list_new = list(set(w_list))
+
+                    w_list_str = " ".join(w_list_new)
                     header_vector = self.emb(w_list_str)
                     chunk.headings = [w_list_str]
+
+                    pages = chunk.pages
+                    file_path = chunk.file_name
+                    if callback:
+                        callback(file_path, pages, w_list_str)
                 else:
                     header_vector = self.emb(header_str)
                 heddings_vectors.append(header_vector)
@@ -71,9 +80,19 @@ class embVector:
             # 文章を単語に分解して登録するか
             if tolknize:
                 w_list = tkn.tokenize(chunk.text)
-                w_list_str = " ".join(w_list)
+                # 重複削除
+                w_list_new = list(set(w_list))
+
+                w_list_str = " ".join(w_list_new)
                 vector = self.emb(w_list_str)
                 chunk.text = w_list_str
+
+                pages = chunk.pages
+                file_path = chunk.file_name
+                if callback:
+                    if "する" in w_list_str:
+                        print("する")
+                    callback(file_path, pages, w_list_str)
             else:
                 vector = self.emb(chunk.text)
             vectors.append(vector)
