@@ -1,8 +1,8 @@
 """Embedding vector生成."""
 from typing import Callable
 from llama_cpp import Llama
-from conver_md_chunk import MdChunk
-from tokenize_keywords import TokenizerKeywords
+from lib.conver_md_chunk import MdChunk
+from lib.tokenize_keywords import TokenizerKeywords
 
 
 class embVector:
@@ -90,8 +90,6 @@ class embVector:
                 pages = chunk.pages
                 file_path = chunk.file_name
                 if callback:
-                    if "する" in w_list_str:
-                        print("する")
                     callback(file_path, pages, w_list_str)
             else:
                 vector = self.emb(chunk.text)

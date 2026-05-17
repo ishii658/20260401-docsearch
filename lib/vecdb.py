@@ -2,7 +2,7 @@ from uuid import uuid4
 from qdrant_client import QdrantClient
 from qdrant_client.models import Distance, VectorParams, PointStruct, Record, ScoredPoint
 
-from conver_md_chunk import MdChunk
+from lib.conver_md_chunk import MdChunk
 
 class vecDataStore:
     def __init__(self, path: str = "./qdrant_data", model_dim: int = 768):

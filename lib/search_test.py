@@ -1,7 +1,7 @@
 """検索."""
-from gen_emb_vector import embVector
-from vecdb import vecDataStore
-from llm_test import llmCmp
+from lib.gen_emb_vector import embVector
+from lib.vecdb import vecDataStore
+from lib.llm_test import llmCmp
 
 def main(search_text: str):
     """Main.
@@ -30,7 +30,7 @@ def main(search_text: str):
         payload = row.payload
         print("============")
         print(f"score:{row.score}")
-        print(f"headings: {payload["headings"]}")
+        print(f"headings: {payload['headings']}" )
         print(f"text: {payload['text']}")
 
         # 比較

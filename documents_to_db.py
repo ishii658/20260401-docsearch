@@ -1,11 +1,21 @@
 """Embedding Vector生成 と データベースへの保存."""
 from glob import glob
-from vecdb import vecDataStore
-from gen_emb_vector import embVector
-from conver_md_chunk import MdChunk, convertMdChunk
+import os
+from dotenv import load_dotenv
+from lib.vecdb import vecDataStore
+from lib.gen_emb_vector import embVector
+from lib.conver_md_chunk import MdChunk, convertMdChunk
 
-from tokenize_keywords import TokenizerKeywords
-from txtSerch import TxtSerch
+from lib.tokenize_keywords import TokenizerKeywords
+from lib.txtSerch import TxtSerch
+
+# 環境変数ロード
+load_dotenv()
+VECTOR_DB_DIR = os.getenv('VECTOR_DB_DIR', 'qdrant_data')
+VECTOR_DB_COLLECTION = os.getenv('VECTOR_DB_COLLECTION', 'docvec')
+SQLITE_DB = os.getenv('SQLITE_DB', 'words.sqlite3')
+WORDS_TABLE = os.getenv('WORDS_TABLE', 'words')
+
 
 def search_dir(dir_path: str, extensions: list[str]) -> list[str]:
     """ディレクトリ内のファイルを検索.
@@ -45,7 +55,7 @@ def gen_emb_db(file_path: str, collection_name: str) -> None:
     
     # embVectorのインスタンスを作成
     emb_vector = embVector()
-    vdb = vecDataStore(model_dim=emb_vector.model_dim)
+    vdb = vecDataStore(path=VECTOR_DB_DIR, model_dim=emb_vector.model_dim)
 
     try:
         # embedding vector 生成
@@ -57,8 +67,8 @@ def gen_emb_db(file_path: str, collection_name: str) -> None:
         # kw_header_vectors_list:list[list[list[float]]] = []
 
         # 全文検索
-        tsch = TxtSerch("./words.sqlite3")
-        tsch.create_table("words")
+        tsch = TxtSerch(SQLITE_DB)
+        tsch.create_table(WORDS_TABLE)
         tsch.begin()
 
         for md_chunks in md_chunks_list:
@@ -110,4 +120,4 @@ def gen_emb_db(file_path: str, collection_name: str) -> None:
         vdb.close()
 
 if __name__ == "__main__":
-    gen_emb_db(file_path="/home/ishii/data", collection_name="test")
+    gen_emb_db(file_path="/home/ishii/data", collection_name=VECTOR_DB_COLLECTION)
