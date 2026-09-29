@@ -36,6 +36,10 @@ class embVector:
     def emb_chunks(self, chunks: list[MdChunk], tolknize=False, callback: Callable[[str, list[int], str], None] | None = None) -> tuple[list[list[float]], list[list[float]], list[MdChunk]]:
         """MdChunkのリストをEmbedding Vectorのリストに変換.
 
+        2026/08/14 tolknize True のときは vector を生成しないように変更.
+        vectors, heddings_vectors とも空
+
+
         Args:
             chunks (list[MdChunk]): MdChunkのリスト
             tolknize (bool): 単語の羅列に変換するかどうか
@@ -55,7 +59,11 @@ class embVector:
         # chunks をコピー
         cp_chunks: list[MdChunk] = [chunk.model_copy(deep=True) for chunk in chunks]
         for chunk in cp_chunks:
-            
+            if 2000 < len(chunk.text):
+                print(f"!!!! ERROR : file: {chunk.file_name} , {len(chunk.text)}")
+                continue
+
+            # headings セクション
             if chunk.headings is not None:
                 header_str = " ".join(chunk.headings)
                 # 単語分解して登録するか
@@ -65,7 +73,7 @@ class embVector:
                     w_list_new = list(set(w_list))
 
                     w_list_str = " ".join(w_list_new)
-                    header_vector = self.emb(w_list_str)
+                    # header_vector = self.emb(w_list_str)
                     chunk.headings = [w_list_str]
 
                     pages = chunk.pages
@@ -74,8 +82,10 @@ class embVector:
                         callback(file_path, pages, w_list_str)
                 else:
                     header_vector = self.emb(header_str)
-                heddings_vectors.append(header_vector)
+                    heddings_vectors.append(header_vector)
             #
+
+            # shunk 本体
 
             # 文章を単語に分解して登録するか
             if tolknize:
@@ -84,7 +94,7 @@ class embVector:
                 w_list_new = list(set(w_list))
 
                 w_list_str = " ".join(w_list_new)
-                vector = self.emb(w_list_str)
+                # vector = self.emb(w_list_str)
                 chunk.text = w_list_str
 
                 pages = chunk.pages
@@ -92,8 +102,9 @@ class embVector:
                 if callback:
                     callback(file_path, pages, w_list_str)
             else:
+                print(f"===== iwlen:{len(chunk.text)} ====")
                 vector = self.emb(chunk.text)
-            vectors.append(vector)
+                vectors.append(vector)
 
         return vectors, heddings_vectors, cp_chunks
 
