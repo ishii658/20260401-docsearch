@@ -31,6 +31,26 @@ pip install qdrant-client
 pip install sudachipy sudachidict_core PySide6 python-dotenv
 ```
 
+windowsなどでtempディレクトリがパスの長さ制限にかかる場合は以下を実行して置く。
+powershellの場合.
+
+```
+mkdir C:\Temp
+$env:TEMP="C:\Temp"
+$env:TMP="C:\Temp"
+```
+
+windowsなどで build できない環境の場合に llama-cpp-python のバイナリをinstallする場合は、
+```
+# powershell の場合
+pip install llama-cpp-python `
+  --extra-index-url https://abetlen.github.io/llama-cpp-python/whl/cpu
+
+```
+
+
+
+
 モデルの配置（説明のみ）:
 - embedding 用推奨モデル: `embeddinggemma-300M-Q8_0.gguf`（埋め込み生成用、モデル次元: 768）
 - 利用可能な補助 LLM: `Qwen3.5-4B-Q4_K_M.gguf`, `Qwen3.5-0.8B-Q4_K_M.gguf`, `google_gemma-4-E2B-it-Q4_K_M.gguf` など（推論／スコアリング用途）
