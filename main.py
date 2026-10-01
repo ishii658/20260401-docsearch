@@ -42,12 +42,21 @@ import sys
 # 環境変数を読み込み
 import os
 import sqlite3
-
+from typing import Any
 from dotenv import load_dotenv
 from PySide6.QtWidgets import QApplication, QMainWindow
 from ui.main_ui import Ui_MainWindow  # 変換されたクラスをインポート
 from qdrant_client import QdrantClient
 from lib.gen_emb_vector import embVector
+
+# g_rank_sort = None
+# ===== rerank ========
+from rerank import JevReranker
+
+MODEL_DIR = "/models/JevEmbed-Qwen3-Embedding-0.6B"
+g_rank_sort = JevReranker(model_dir=MODEL_DIR)
+# =====================
+
 
 # 環境変数ロード
 load_dotenv()
@@ -55,6 +64,7 @@ VECTOR_DB_DIR = os.getenv('VECTOR_DB_DIR', 'qdrant_data')
 VECTOR_DB_COLLECTION = os.getenv('VECTOR_DB_COLLECTION', 'docvec')
 SQLITE_DB = os.getenv('SQLITE_DB', 'words.sqlite3')
 WORDS_TABLE = os.getenv('WORDS_TABLE', 'words')
+
 
 
 class MyWindow(QMainWindow):
@@ -123,15 +133,46 @@ class MyWindow(QMainWindow):
         search_results = result.points
 
         txt = ""
-        for row in search_results:
-            payload = row.payload
-            if payload is not None:
-                text = payload.get("text", "")
+        if g_rank_sort is None:
+            for row in search_results:
+                payload = row.payload
+                if payload is not None:
+                    text = payload.get("text", "")
+                    # text から改行を削除
+                    text_p = text.replace("\n", " ")
+                    pages = payload.get("pages")
+                    file_name = payload.get("file_name")
+                    txt += f"{text_p}, {pages}, {file_name}\n"
+        else:
+            # reranking
+            # 入力辞書を準備
+            input_list: list[dict[str, Any]] = []
+
+            for row in search_results:
+                payload = row.payload
+                if payload is not None:
+                    text = payload.get("text", "")
+                    pages = payload.get("pages")
+                    file_name = payload.get("file_name")
+                    input_list.append({
+                        "text": text,
+                        "pages": pages,
+                        "file_name": file_name
+                    })
+            # for
+
+            # リランキング
+            rerank_result = g_rank_sort.rerank(query, input_list, nnum)
+
+            # 成形
+            for row in rerank_result:
+                text = row.get("text", "")
                 # text から改行を削除
                 text_p = text.replace("\n", " ")
-                pages = payload.get("pages")
-                file_name = payload.get("file_name")
-                txt += f"{text_p}, {pages}, {file_name}\n"
+                pages = row.get("pages")
+                file_name = row.get("file_name")
+                txt += f"{text_p}, {pages}, {file_name}\n"                
+
         self.ui.resulttext.setPlainText(txt)
             
 

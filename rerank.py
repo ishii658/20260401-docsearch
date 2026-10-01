@@ -3,6 +3,7 @@
 # # JevEmbed のインストール
 # pip install git+https://github.com/HITsz-TMG/JevEmbed.git
 # pip install git+https://github.com/HITsz-TMG/JevEmbed.git
+# python -m pip install -U "jevembed[local]"
 #
 # # モデルダウンロード用のツール (huggingface_hub)
 # pip install -U "huggingface_hub[cli]"

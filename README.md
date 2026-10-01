@@ -45,7 +45,6 @@ windowsなどで build できない環境の場合に llama-cpp-python のバイ
 # powershell の場合
 pip install llama-cpp-python `
   --extra-index-url https://abetlen.github.io/llama-cpp-python/whl/cpu
-
 ```
 
 
