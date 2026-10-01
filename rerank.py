@@ -21,16 +21,10 @@
 # ├── tokenizer.json
 # └── ...
 
-
-from pathlib import Path
-from dataclasses import replace
-
-from jevembed import JevEmbed, ModelConfig
-
 import logging
 from dataclasses import replace
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Union
+from typing import Any
 
 from jevembed import JevEmbed, ModelConfig
 
@@ -109,7 +103,7 @@ class JevReranker:
         client (JevEmbed): 評価処理を実行する JevEmbed クライアントインスタンス。
     """
 
-    def __init__(self, model_dir: Union[str, Path]) -> None:
+    def __init__(self, model_dir: str|Path) -> None:
         """JevEmbed モデルの設定ファイルを読み込み、クライアントを初期化します。
 
         Args:
@@ -140,9 +134,9 @@ class JevReranker:
     def rerank(
         self,
         query: str,
-        documents: List[Dict[str, Any]],
-        top_k: Optional[int] = None,
-    ) -> List[Dict[str, Any]]:
+        documents: list[dict[str, Any]],
+        top_k: int|None = None,
+    ) -> list[dict[str, Any]]:
         """クエリに対して事前検索された文書群を JevEmbed で関連度順に並べ替えます。
 
         Args:
@@ -177,7 +171,7 @@ class JevReranker:
         if not documents:
             return []
 
-        results: List[Dict[str, Any]] = []
+        results: list[dict[str, Any]] = []
 
         for index, document in enumerate(documents):
             if "text" not in document:
@@ -200,7 +194,7 @@ class JevReranker:
             jev_score: float = self._score(query=query, document=text)
 
             # 原本のデータ構造を保持するため浅いコピーを作成
-            result: Dict[str, Any] = dict(document)
+            result: dict[str, Any] = dict(document)
             result["jev_score"] = jev_score
             results.append(result)
 
@@ -228,7 +222,7 @@ class JevReranker:
         Returns:
             float: JevEmbed によって算出された関連度スコア。
         """
-        request: Dict[str, Any] = {
+        request: dict[str, Any] = {
             "state": {
                 "query": query,
                 "passage": document,
@@ -256,15 +250,15 @@ class JevReranker:
             },
         }
 
-        response: Dict[str, Any] = self.client.evaluate(request)
+        response: dict[str, Any] = self.client.evaluate(request)
         return self._extract_score(response)
 
     @staticmethod
-    def _extract_score(response: Dict[str, Any]) -> float:
+    def _extract_score(response: dict[str, Any]) -> float:
         """JevEmbed のレスポンス辞書から関連度スコアを安全に抽出・変換します。
 
         Args:
-            response (Dict[str, Any]): JevEmbed の `evaluate()` メソッドから返却されたレスポンス辞書。
+            response (dict[str, Any]): JevEmbed の `evaluate()` メソッドから返却されたレスポンス辞書。
 
         Returns:
             float: 抽出された数値スコア。
@@ -274,21 +268,22 @@ class JevReranker:
         """
         try:
             # レスポンス構造の揺れ（`answers` キーの有無など）に柔軟に対応
-            answers: Dict[str, Any] = response.get("answers", response)
-            relevant: Union[Dict[str, Any], float, int, str] = answers.get("relevant", {})
+            answers: dict[str, Any] = response.get("answers", response)
+            relevant: dict[str, Any] | float | int | str = answers.get("relevant", {})
 
             if isinstance(relevant, dict):
                 # 主要なスコアキー候補を順次探索
-                val = (
-                    relevant.get("noul")
-                    or relevant.get("probability")
-                    or relevant.get("score")
-                    or relevant.get("value")
-                )
-                if val is not None:
-                    return float(val)
+                for key in ("noul", "probability", "score", "value"):
+                    val = relevant.get(key)
+                    if val is not None:
+                        return float(val)
 
+                # dict なのに知っているキーが1つも存在しなかった場合
+                raise ValueError(f"辞書内に有効なスコアキーが見つかりませんでした: {relevant}")
+
+            # ここに到達した時点で relevant は float | int | str に確定する（型チェッカーも認識）
             return float(relevant)
+
         except (KeyError, TypeError, ValueError) as exc:
             logger.error("JevEmbed レスポンスからのスコア解析に失敗しました: %r", response)
             raise RuntimeError(
